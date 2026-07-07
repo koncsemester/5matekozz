@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="hu">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Matek">
+    <title>Matek Műhely</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">5. osztályos gyakorló</p>
+          <h1>Matek Műhely</h1>
+        </div>
+        <div class="student-box">
+          <label for="studentName">Tanuló neve</label>
+          <input id="studentName" type="text" autocomplete="name" placeholder="Név">
+        </div>
+      </header>
+
+      <main>
+        <section class="dashboard" aria-label="Haladás">
+          <div class="stat">
+            <span id="completedTests">0</span>
+            <small>sikeres teszt</small>
+          </div>
+          <div class="stat">
+            <span id="bestRun">0/10</span>
+            <small>legjobb sorozat</small>
+          </div>
+          <div class="stat">
+            <span id="attempts">0</span>
+            <small>próbálkozás</small>
+          </div>
+          <div class="sync-actions">
+            <button id="exportBtn" class="ghost-btn" type="button" title="Haladás mentése fájlba">Haladás mentése</button>
+            <button id="importBtn" class="ghost-btn" type="button" title="Haladás visszatöltése fájlból">Haladás betöltése</button>
+            <input id="importInput" class="visually-hidden" type="file" accept="application/json,.json">
+          </div>
+        </section>
+
+        <section class="phone-note" aria-label="Telefonos használat">
+          <strong>Telefonon is használható.</strong>
+          <span>A haladás ezen az eszközön megmarad. Időnként mentsd el fájlba, tanév elején pedig meg tudod mutatni vagy elküldeni.</span>
+        </section>
+
+        <section class="awards-panel" aria-label="Kitüntetések">
+          <div>
+            <h2>Kitüntetések</h2>
+            <div id="awardsList" class="awards-list"></div>
+          </div>
+          <div id="awardDetails" class="award-details">A sikeres tesztek ikonjai itt jelennek meg.</div>
+        </section>
+
+        <section class="test-picker" aria-label="Tesztválasztó">
+          <div>
+            <h2>Válassz tesztet</h2>
+            <div id="testButtons" class="test-list"></div>
+          </div>
+          <button id="startBtn" class="primary-btn" type="button">Teszt indítása</button>
+        </section>
+
+        <section class="practice-board">
+          <div class="question-panel">
+            <div class="question-head">
+              <span id="questionMeta">Válassz tesztet</span>
+              <button id="restartBtn" class="icon-btn" type="button" title="Újrakezdés">↻</button>
+            </div>
+            <div id="questionText" class="question-text"></div>
+            <div id="answerArea" class="answer-area"></div>
+            <div class="actions">
+              <button id="checkBtn" class="primary-btn" type="button">Ellenőrzés</button>
+              <button id="hintBtn" class="secondary-btn" type="button">Segítség</button>
+            </div>
+            <div id="feedback" class="feedback" aria-live="polite"></div>
+          </div>
+
+          <aside class="side-panel" aria-label="Teszt állása">
+            <h2>Aktuális cél</h2>
+            <div id="runProgress" class="run-progress"></div>
+            <div id="testProgress" class="topic-progress"></div>
+          </aside>
+        </section>
+      </main>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
