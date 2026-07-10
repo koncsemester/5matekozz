@@ -43,6 +43,43 @@ button {
   padding: 22px 0 32px;
 }
 
+.site-footer {
+  margin: 22px auto 0;
+  padding: 10px 8px 0;
+  color: var(--muted);
+  text-align: center;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.school-crest-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 8px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.school-crest-btn:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 4px;
+  border-radius: 999px;
+}
+
+.school-crest {
+  display: block;
+  width: 74px;
+  height: 74px;
+  object-fit: contain;
+}
+
+.site-footer p {
+  margin: 2px 0;
+}
+
 .topbar {
   display: flex;
   align-items: center;
@@ -239,6 +276,12 @@ h2 {
   background: #f2f5f9;
 }
 
+.audit-name {
+  display: inline-block;
+  margin-top: 6px;
+  color: var(--ink);
+}
+
 .test-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -339,7 +382,22 @@ h2 {
   font-size: clamp(1.25rem, 3.6vw, 2.25rem);
   font-weight: 900;
   line-height: 1.32;
+  overflow-wrap: anywhere;
 }
+
+.question-text.compact {
+  align-items: flex-start;
+  font-size: clamp(1rem, 2.4vw, 1.45rem);
+  line-height: 1.58;
+}
+
+.question-text.one-line {
+  align-items: center;
+  font-size: clamp(1rem, 2vw, 1.55rem);
+  line-height: 1.35;
+  overflow-wrap: normal;
+  white-space: nowrap;
+ }
 
 .question-text small {
   display: block;
@@ -385,6 +443,11 @@ h2 {
   color: var(--ink);
   font-size: 1.2em;
   font-weight: 900;
+  max-width: 100%;
+}
+
+.question-text.compact .math-line {
+  font-size: 1em;
 }
 
 .math-power {
@@ -392,6 +455,11 @@ h2 {
   align-items: flex-start;
   white-space: nowrap;
   vertical-align: baseline;
+  margin: 0 0.18em;
+}
+
+.question-text.compact .math-power {
+  font-size: 0.96em;
 }
 
 .power-base {
@@ -421,7 +489,7 @@ h2 {
   align-items: center;
   justify-items: center;
   min-width: 1.2em;
-  margin: 0 0.08em;
+  margin: 0 0.18em;
   vertical-align: middle;
   line-height: 1;
 }
@@ -441,6 +509,7 @@ h2 {
   align-items: center;
   gap: 0.16em;
   white-space: nowrap;
+  margin: 0 0.18em;
 }
 
 .math-integer {
@@ -644,7 +713,21 @@ sup {
   }
 
   .question-text {
+    min-height: 150px;
+    padding: 16px;
     font-size: 1.08rem;
+  }
+
+  .question-text.compact {
+    min-height: 130px;
+    font-size: 0.95rem;
+    line-height: 1.68;
+  }
+
+  .question-text.one-line {
+    font-size: clamp(0.78rem, 3.2vw, 0.98rem);
+    padding-left: 10px;
+    padding-right: 10px;
   }
 
   .run-progress {

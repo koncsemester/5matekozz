@@ -175,7 +175,8 @@ const els = {
   hintBtn: document.querySelector("#hintBtn"),
   exportBtn: document.querySelector("#exportBtn"),
   importBtn: document.querySelector("#importBtn"),
-  importInput: document.querySelector("#importInput")
+  importInput: document.querySelector("#importInput"),
+  schoolCrestBtn: document.querySelector("#schoolCrestBtn")
 };
 
 function rand(min, max) {
@@ -363,7 +364,7 @@ function notSquareChoiceQuestion(testId) {
   const answer = pick(notSquares);
   return makeChoiceQuestion({
     testId,
-    html: "Karikázd be, hogy melyik NEM négyzetszám!",
+    html: "Jelöld be, hogy melyik NEM négyzetszám!",
     choices: shuffle([answer, ...squares.slice(0, 3)]).map(String),
     answer: String(answer),
     hint: "A négyzetszám olyan szám, amely felírható n · n alakban."
@@ -577,7 +578,11 @@ function largerSquareQuestion(testId) {
 }
 
 function placeValueQuestion(testId) {
-  const digits = [rand(1, 9), rand(0, 9), rand(0, 9), rand(0, 9), rand(0, 9), rand(0, 9)];
+  const digits = shuffle([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]).slice(0, 6);
+  if (digits[0] === 0) {
+    const swapIndex = digits.findIndex((digit) => digit !== 0);
+    [digits[0], digits[swapIndex]] = [digits[swapIndex], digits[0]];
+  }
   const number = Number(digits.join(""));
   const places = ["százezresek", "tízezresek", "ezresek", "százasok", "tízesek", "egyesek"];
   const i = rand(0, 5);
@@ -737,10 +742,10 @@ function primeAmongFourQuestion(testId) {
   const composites = shuffle([12, 15, 21, 25, 27, 33, 35, 39, 45, 49, 51, 55, 57]);
   return makeChoiceQuestion({
     testId,
-    html: "Karikázd be, melyik szám prímszám!",
+    html: "Jelöld be, melyik szám prímszám!",
     choices: shuffle([prime, ...composites.slice(0, 3)]).map(String),
     answer: String(prime),
-    hint: "A prímszámnak pontosan két pozitív osztója van: 1 és önmaga."
+    hint: "A prímszámnak pontosan két természetes osztója van: 1 és önmaga."
   });
 }
 
@@ -749,13 +754,13 @@ function primeRuleQuestion(testId) {
     testId,
     html: "Mikor prímszám egy természetes szám?",
     choices: shuffle([
-      "ha pontosan két pozitív osztója van: 1 és önmaga",
+      "ha pontosan két természetes osztója van: 1 és önmaga",
       "ha páros",
       "ha legalább három osztója van",
       "ha osztható 3-mal"
     ]),
-    answer: "ha pontosan két pozitív osztója van: 1 és önmaga",
-    hint: "Az 1 nem prímszám, mert nincs pontosan két pozitív osztója."
+    answer: "ha pontosan két természetes osztója van: 1 és önmaga",
+    hint: "Az 1 nem prímszám, mert nincs pontosan két természetes osztója."
   });
 }
 
@@ -781,7 +786,7 @@ function divisorCountQuestion(testId) {
   const n = pick([12, 18, 20, 24, 28, 30, 36, 40, 42, 48, 54, 60]);
   return makeInputQuestion({
     testId,
-    html: `Hány pozitív osztója van a ${n} számnak?`,
+    html: `Hány természetes osztója van a ${n} számnak?`,
     answer: divisorCount(n),
     hint: "Írd fel osztópárokban: 1 és maga a szám, majd 2, 3, 4..."
   });
@@ -958,7 +963,7 @@ function reverseThinkingQuestion(testId) {
   } while (!Number.isInteger(result));
   return makeInputQuestion({
     testId,
-    html: `Gondoltam egy számra, megszoroztam ${multiply}-val, hozzáadtam ${add}-öt, levontam ${subtract}-et, elosztottam ${divisor}-val, és ${result}-et kaptam. Melyik számra gondoltam?`,
+    html: `Gondoltam egy számra, megszoroztam a(z) ${multiply} számmal, hozzáadtam a(z) ${add} számot, levontam a(z) ${subtract} számot, elosztottam a(z) ${divisor} számmal, és a(z) ${result} számot kaptam. Melyik számra gondoltam?`,
     answer: start,
     hint: "Indulj visszafelé: szorozz, adj hozzá vagy vonj ki fordított sorrendben."
   });
@@ -1003,7 +1008,7 @@ function primePartFractionQuestion(testId) {
     html: `Melyik tört ${askNumerator ? "számlálója" : "nevezője"} prímszám?`,
     choices: options.map(([n, d]) => exactFractionChoice(n, d)),
     answer: `${correct[0]}/${correct[1]}`,
-    hint: "A prímszámnak pontosan két pozitív osztója van: 1 és önmaga."
+    hint: "A prímszámnak pontosan két természetes osztója van: 1 és önmaga."
   });
 }
 
@@ -1912,7 +1917,7 @@ function cuboidVolumeQuestion(testId) {
 }
 
 function loadProgress() {
-  const fallback = { name: "", attempts: 0, completed: 0, byTest: {}, history: [] };
+  const fallback = { name: "", nameLog: [], attempts: 0, completed: 0, byTest: {}, history: [] };
   try {
     return normalizeProgress(JSON.parse(localStorage.getItem("matekMuhelyTestProgress") || "{}"));
   } catch {
@@ -1921,7 +1926,7 @@ function loadProgress() {
 }
 
 function normalizeProgress(data) {
-  const fallback = { name: "", attempts: 0, completed: 0, byTest: {}, history: [] };
+  const fallback = { name: "", nameLog: [], attempts: 0, completed: 0, byTest: {}, history: [] };
   const source = data && typeof data === "object" ? data : {};
   const byTest = {};
   Object.entries(source.byTest || {}).forEach(([testId, row]) => {
@@ -1932,9 +1937,11 @@ function normalizeProgress(data) {
       answered: Number(row?.answered) || 0
     };
   });
+  const nameLog = normalizeNameLog(source);
   return {
     ...fallback,
     name: String(source.name || ""),
+    nameLog,
     attempts: Number(source.attempts) || 0,
     completed: Number(source.completed) || 0,
     byTest,
@@ -1942,8 +1949,103 @@ function normalizeProgress(data) {
   };
 }
 
+function normalizeNameLog(source) {
+  const entries = [];
+  if (Array.isArray(source.nameLog)) {
+    source.nameLog.forEach((item) => {
+      if (typeof item === "string") {
+        entries.push({ name: item, date: "" });
+      } else if (item && typeof item === "object") {
+        entries.push({ name: item.name, date: item.date });
+      }
+    });
+  }
+  if (Array.isArray(source.names)) {
+    source.names.forEach((name) => entries.push({ name, date: "" }));
+  }
+  if (source.name) {
+    entries.push({ name: source.name, date: "" });
+  }
+
+  const seen = new Set();
+  return entries.reduce((names, item) => {
+    const name = String(item.name || "").trim();
+    if (!name || seen.has(name.toLocaleLowerCase("hu-HU"))) {
+      return names;
+    }
+    seen.add(name.toLocaleLowerCase("hu-HU"));
+    names.push({
+      name,
+      date: String(item.date || new Date().toISOString())
+    });
+    return names;
+  }, []).slice(-20);
+}
+
+function recordStudentName(name) {
+  const cleanName = String(name || "").trim();
+  if (!cleanName) return;
+  const key = cleanName.toLocaleLowerCase("hu-HU");
+  const existing = (state.progress.nameLog || []).some((item) => String(item.name || "").toLocaleLowerCase("hu-HU") === key);
+  if (!existing) {
+    state.progress.nameLog = [...(state.progress.nameLog || []), { name: cleanName, date: new Date().toISOString() }].slice(-20);
+  }
+}
+
 function saveProgress() {
   localStorage.setItem("matekMuhelyTestProgress", JSON.stringify(state.progress));
+}
+
+const BACKUP_PREFIX = "MATEK-MUHELY-2:";
+const BACKUP_SALT = "matek-muhely-vakacio-2026";
+
+function checksumText(text) {
+  let hash = 2166136261;
+  for (let i = 0; i < text.length; i += 1) {
+    hash ^= text.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(36);
+}
+
+function encodeUnicodeBase64(text) {
+  return btoa(unescape(encodeURIComponent(text)));
+}
+
+function decodeUnicodeBase64(text) {
+  return decodeURIComponent(escape(atob(text)));
+}
+
+function encodeBackup(progress) {
+  const payload = JSON.stringify({
+    app: "Matek Műhely",
+    version: 2,
+    savedAt: new Date().toISOString(),
+    progress
+  });
+  const encoded = encodeUnicodeBase64(payload);
+  const checksum = checksumText(`${BACKUP_SALT}:${encoded}`);
+  return `${BACKUP_PREFIX}${checksum}:${encoded}`;
+}
+
+function decodeBackup(text) {
+  const content = String(text || "").trim();
+  if (!content.startsWith(BACKUP_PREFIX)) {
+    return JSON.parse(content);
+  }
+
+  const rest = content.slice(BACKUP_PREFIX.length);
+  const separatorIndex = rest.indexOf(":");
+  if (separatorIndex < 1) {
+    throw new Error("Hibás mentésfájl.");
+  }
+  const checksum = rest.slice(0, separatorIndex);
+  const encoded = rest.slice(separatorIndex + 1);
+  if (checksumText(`${BACKUP_SALT}:${encoded}`) !== checksum) {
+    throw new Error("A mentésfájl ellenőrzése nem sikerült.");
+  }
+  const parsed = JSON.parse(decodeUnicodeBase64(encoded));
+  return parsed.progress;
 }
 
 function selectedTest() {
@@ -2110,11 +2212,27 @@ function renderRunProgress() {
   }).join("");
 }
 
+function shouldCompactQuestion(html) {
+  const text = String(html || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  const powerCount = (String(html || "").match(/math-power/g) || []).length;
+  const fractionCount = (String(html || "").match(/math-frac/g) || []).length;
+  return text.length > 76 || (powerCount >= 1 && text.length > 34) || fractionCount >= 3;
+}
+
+function shouldKeepQuestionOnOneLine(html) {
+  const content = String(html || "");
+  const text = content.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  const powerCount = (content.match(/math-power/g) || []).length;
+  const fractionCount = (content.match(/math-frac/g) || []).length;
+  return powerCount === 1 && fractionCount === 0 && !content.includes("math-line") && text.length <= 64;
+}
+
 function renderQuestion() {
   const test = selectedTest();
   disableAnswering(!state.active);
   if (!state.active) {
     els.questionMeta.textContent = test.name;
+    els.questionText.className = "question-text";
     els.questionText.innerHTML = `Válaszd ki és indítsd el a ${test.length} kérdéses kihívást.`;
     els.answerArea.innerHTML = "";
     setFeedback("Hibánál a teszt új feladatokkal az elejéről indul.", "");
@@ -2124,6 +2242,11 @@ function renderQuestion() {
   const question = state.run[state.index];
   state.selectedChoice = null;
   els.questionMeta.textContent = `${test.name} · ${state.index + 1}/${test.length}`;
+  els.questionText.className = [
+    "question-text",
+    shouldCompactQuestion(question.html) ? "compact" : "",
+    shouldKeepQuestionOnOneLine(question.html) ? "one-line" : ""
+  ].filter(Boolean).join(" ");
   els.questionText.innerHTML = question.html;
 
   if (question.type === "choice") {
@@ -2144,9 +2267,33 @@ function escapeAttribute(value) {
     .replaceAll(">", "&gt;");
 }
 
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
 function setFeedback(text, type) {
   els.feedback.className = `feedback ${type || ""}`.trim();
   els.feedback.textContent = text;
+}
+
+function showNameAudit() {
+  const names = normalizeNameLog(state.progress);
+  state.progress.nameLog = names;
+  saveProgress();
+  els.awardDetails.dataset.locked = "true";
+  if (!names.length) {
+    els.awardDetails.textContent = "Tanári ellenőrzés: ebben a mentésben még nincs beírt név.";
+    return;
+  }
+  els.awardDetails.innerHTML = `
+    <strong>Tanári ellenőrzés</strong><br>
+    Ebben a mentésben eddig ezek a nevek szerepeltek:<br>
+    ${names.map((item) => `<span class="audit-name">${escapeHtml(item.name)}</span>`).join(", ")}
+  `;
 }
 
 function disableAnswering(disabled) {
@@ -2192,13 +2339,14 @@ function checkAnswer() {
 }
 
 function exportProgress() {
-  const data = JSON.stringify(state.progress, null, 2);
-  const blob = new Blob([data], { type: "application/json;charset=utf-8" });
+  recordStudentName(state.progress.name);
+  const data = encodeBackup(state.progress);
+  const blob = new Blob([data], { type: "text/plain;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   const safeName = (state.progress.name || "tanulo").trim().replace(/[^\w-]+/g, "_");
   link.href = url;
-  link.download = `matek-muhely-haladas-${safeName}.json`;
+  link.download = `matek-muhely-haladas-${safeName}.mmh`;
   link.click();
   URL.revokeObjectURL(url);
 }
@@ -2208,7 +2356,7 @@ function importProgressFile(file) {
   const reader = new FileReader();
   reader.addEventListener("load", () => {
     try {
-      const imported = normalizeProgress(JSON.parse(String(reader.result || "{}")));
+      const imported = normalizeProgress(decodeBackup(reader.result));
       state.progress = imported;
       state.active = false;
       state.index = 0;
@@ -2257,8 +2405,11 @@ els.awardsList.addEventListener("click", (event) => {
 
 els.studentName.addEventListener("input", () => {
   state.progress.name = els.studentName.value.trim();
+  recordStudentName(state.progress.name);
   saveProgress();
 });
+
+els.schoolCrestBtn.addEventListener("click", showNameAudit);
 
 els.startBtn.addEventListener("click", () => startRun(true));
 els.restartBtn.addEventListener("click", () => startRun(true));
