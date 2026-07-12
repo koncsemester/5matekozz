@@ -1,4 +1,4 @@
-const CACHE_NAME = "matek-muhely-v23";
+const CACHE_NAME = "matek-muhely-v29";
 const ASSETS = [
   "./",
   "./index.html",
@@ -12,6 +12,11 @@ const ASSETS = [
   "./decimals-icon.png",
   "./geometry-icon.png",
   "./school-crest.png",
+  "./theory-natural.png",
+  "./theory-divisibility.png",
+  "./theory-fractions.png",
+  "./theory-decimals.png",
+  "./theory-geometry.png",
   "./summary-icon.svg"
 ];
 

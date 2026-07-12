@@ -80,6 +80,60 @@ button {
   margin: 2px 0;
 }
 
+.theory-panel {
+  margin: 22px 0 0;
+  border: 2px solid var(--line);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.92);
+  overflow: hidden;
+}
+
+.theory-panel summary {
+  cursor: pointer;
+  padding: 16px 18px;
+  color: var(--ink);
+  font-weight: 900;
+  line-height: 1.25;
+  list-style-position: inside;
+}
+
+.theory-panel[open] summary {
+  border-bottom: 2px solid var(--line);
+  background: var(--blue-soft);
+}
+
+.theory-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  padding: 16px;
+}
+
+.theory-card {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+
+.theory-card h2 {
+  font-size: 0.95rem;
+}
+
+.theory-card img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 2px solid var(--line);
+  border-radius: var(--radius);
+  background: white;
+}
+
+.theory-card:last-child {
+  grid-column: 1 / -1;
+  width: min(100%, 680px);
+  justify-self: center;
+}
+
 .topbar {
   display: flex;
   align-items: center;
@@ -385,6 +439,12 @@ h2 {
   overflow-wrap: anywhere;
 }
 
+.question-content {
+  width: min(100%, 980px);
+  max-width: 100%;
+  display: block;
+}
+
 .question-text.compact {
   align-items: flex-start;
   font-size: clamp(1rem, 2.4vw, 1.45rem);
@@ -396,8 +456,11 @@ h2 {
   font-size: clamp(1rem, 2vw, 1.55rem);
   line-height: 1.35;
   overflow-wrap: normal;
-  white-space: nowrap;
  }
+
+.question-text.one-line .question-content {
+  white-space: nowrap;
+}
 
 .question-text small {
   display: block;
@@ -486,12 +549,18 @@ h2 {
 .math-frac {
   display: inline-grid;
   grid-template-rows: auto auto;
+  grid-template-columns: max-content;
   align-items: center;
   justify-items: center;
+  width: max-content;
   min-width: 1.2em;
   margin: 0 0.18em;
   vertical-align: middle;
   line-height: 1;
+}
+
+.math-frac > span {
+  white-space: nowrap;
 }
 
 .math-frac > span:first-child {
@@ -510,6 +579,12 @@ h2 {
   gap: 0.16em;
   white-space: nowrap;
   margin: 0 0.18em;
+}
+
+.decimal-number {
+  display: inline-block;
+  white-space: nowrap;
+  margin: 0 0.14em;
 }
 
 .math-integer {
@@ -677,6 +752,14 @@ sup {
   .choice-grid {
     grid-template-columns: 1fr;
   }
+
+  .theory-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .theory-card:last-child {
+    width: 100%;
+  }
 }
 
 @media (max-width: 520px) {
@@ -690,6 +773,15 @@ sup {
   .awards-panel,
   .question-panel,
   .side-panel {
+    padding: 12px;
+  }
+
+  .theory-panel summary {
+    padding: 14px 12px;
+  }
+
+  .theory-grid {
+    gap: 12px;
     padding: 12px;
   }
 

@@ -306,7 +306,7 @@ function roundTo(value, places = 2) {
   return Math.round((Number(value) + Number.EPSILON) * factor) / factor;
 }
 
-function decimalText(value, places = 4) {
+function decimalPlainText(value, places = 4) {
   if (typeof value === "string") return value.replace(".", ",");
   return Number(value)
     .toFixed(places)
@@ -315,9 +315,12 @@ function decimalText(value, places = 4) {
     .replace(".", ",");
 }
 
+function decimalText(value, places = 4) {
+  return `<span class="decimal-number">${decimalPlainText(value, places)}</span>`;
+}
+
 function decimalChoice(value, places = 4) {
-  const label = decimalText(value, places);
-  return { label, value: label };
+  return { label: decimalText(value, places), value: decimalPlainText(value, places) };
 }
 
 function parseDecimalInput(value) {
@@ -325,7 +328,7 @@ function parseDecimalInput(value) {
 }
 
 function decimalFractionLabel(text) {
-  return `<span class="decimal-number">${decimalText(text)}</span>`;
+  return decimalText(text);
 }
 
 function mixedLabel(whole, n, d) {
@@ -1014,14 +1017,17 @@ function primePartFractionQuestion(testId) {
 
 function improperFractionChoiceQuestion(testId) {
   const correct = [rand(5, 12), rand(2, 5)];
-  while (correct[0] < correct[1]) correct[0] += correct[1];
+  while (correct[0] <= correct[1] || correct[0] % correct[1] === 0) {
+    correct[0] = rand(5, 12);
+    correct[1] = rand(2, 5);
+  }
   const proper = [[1, 3], [2, 5], [3, 8], [4, 9], [5, 11]];
   return makeChoiceQuestion({
     testId,
     html: "Melyik tört áltört?",
-    choices: shuffle([correct, ...shuffle(proper).slice(0, 3)]).map(([n, d]) => fractionChoice(n, d)),
+    choices: shuffle([correct, ...shuffle(proper).slice(0, 3)]).map(([n, d]) => rawFractionChoice(n, d)),
     answer: fractionValue(correct[0], correct[1]),
-    hint: "Áltört esetén a számláló nagyobb vagy egyenlő a nevezőnél."
+    hint: "Ebben a feladatban olyan áltörtet keresünk, amelynek számlálója nagyobb a nevezőjénél."
   });
 }
 
@@ -1046,7 +1052,7 @@ function betweenIntegersFractionQuestion(testId) {
   const n = whole * d + rand(1, d - 1);
   return makeChoiceQuestion({
     testId,
-    html: `Melyik két természetes szám között van a ${rawFractionLabel(n, d)} tört?`,
+    html: `Melyik két természetes szám között van ez a tört?<span class="math-line">${rawFractionLabel(n, d)}</span>`,
     choices: shuffle([
       `${whole} és ${whole + 1}`,
       `${whole - 1} és ${whole}`,
@@ -1418,7 +1424,7 @@ function decimalBetweenChoiceQuestion(testId) {
       decimalChoice(roundTo(high + 0.01, 2)),
       decimalChoice(roundTo(high + 0.1, 2))
     ]),
-    answer: decimalText(answer),
+    answer: decimalPlainText(answer),
     hint: "A két szám között azok vannak, amelyek nagyobbak az elsőnél és kisebbek a másodiknál."
   });
 }
@@ -1452,7 +1458,7 @@ function repeatingDecimalDigitQuestion(testId) {
   const digit = pattern[(position - 1) % pattern.length];
   return makeInputQuestion({
     testId,
-    html: `Mi a 0,(${pattern}) szakaszos tizedestört vessző utáni ${position}. számjegye?`,
+    html: `Mi a ${decimalText(`0,(${pattern})`)} szakaszos tizedestört vessző utáni ${position}. számjegye?`,
     answer: Number(digit),
     hint: `A szakasz hossza ${pattern.length}, ezért a hely sorszámát ezzel oszd maradékosan.`
   });
@@ -1514,7 +1520,10 @@ function repeatingDecimalDivisionQuestion(testId) {
     { dividend: 2.5, divisor: 1.1, answer: "2,(27)", wrongs: ["2,27", "2,72", "0,44"] }
   ];
   const item = pick(examples);
-  const choices = shuffle([item.answer, ...item.wrongs]);
+  const choices = shuffle([item.answer, ...item.wrongs]).map((value) => ({
+    label: decimalText(value),
+    value
+  }));
   return makeChoiceQuestion({
     testId,
     html: `${decimalText(item.dividend)} : ${decimalText(item.divisor)} =`,
@@ -1554,7 +1563,7 @@ function repeatingDecimalToFractionChoiceQuestion(testId) {
   const [n, d] = item.fraction;
   return makeChoiceQuestion({
     testId,
-    html: `Melyik közönséges tört egyenlő ezzel: ${item.decimal} ?`,
+    html: `Melyik közönséges tört egyenlő ezzel: ${decimalText(item.decimal)} ?`,
     choices: shuffle([fractionChoice(n, d), ...item.wrongs.map(([wn, wd]) => rawFractionChoice(wn, wd))]),
     answer: fractionValue(n, d),
     hint: "Egyjegyű szakasznál például 0,(3) = 3/9 = 1/3."
@@ -1791,7 +1800,7 @@ function arithmeticMeanDecimalQuestion(testId) {
   const answer = values.reduce((sum, value) => sum + value, 0) / values.length;
   return makeDecimalInputQuestion({
     testId,
-    html: `Számold ki a számtani közepet:<br>${values.map((value) => decimalText(value)).join(", ")}`,
+    html: `Számold ki a számtani közepet:<br>${values.map((value) => decimalText(value)).join("; ")}`,
     answer,
     hint: "A számtani közép = adatok összege : adatok száma."
   });
@@ -2233,7 +2242,7 @@ function renderQuestion() {
   if (!state.active) {
     els.questionMeta.textContent = test.name;
     els.questionText.className = "question-text";
-    els.questionText.innerHTML = `Válaszd ki és indítsd el a ${test.length} kérdéses kihívást.`;
+    els.questionText.innerHTML = `<div class="question-content">Válaszd ki és indítsd el a ${test.length} kérdéses kihívást.</div>`;
     els.answerArea.innerHTML = "";
     setFeedback("Hibánál a teszt új feladatokkal az elejéről indul.", "");
     return;
@@ -2247,7 +2256,7 @@ function renderQuestion() {
     shouldCompactQuestion(question.html) ? "compact" : "",
     shouldKeepQuestionOnOneLine(question.html) ? "one-line" : ""
   ].filter(Boolean).join(" ");
-  els.questionText.innerHTML = question.html;
+  els.questionText.innerHTML = `<div class="question-content">${question.html}</div>`;
 
   if (question.type === "choice") {
     els.answerArea.innerHTML = `<div class="choice-grid">${question.choices.map((choice) => (
