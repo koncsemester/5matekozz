@@ -1,4 +1,4 @@
-const CACHE_NAME = "matek-muhely-v29";
+const CACHE_NAME = "matek-muhely-v30";
 const ASSETS = [
   "./",
   "./index.html",

@@ -155,6 +155,9 @@ const state = {
   progress: loadProgress()
 };
 
+const DAILY_PRACTICE_LIMIT_SECONDS = 60 * 60;
+const MAX_ACTIVITY_GAP_SECONDS = 5 * 60;
+
 const els = {
   studentName: document.querySelector("#studentName"),
   completedTests: document.querySelector("#completedTests"),
@@ -1926,7 +1929,7 @@ function cuboidVolumeQuestion(testId) {
 }
 
 function loadProgress() {
-  const fallback = { name: "", nameLog: [], attempts: 0, completed: 0, byTest: {}, history: [] };
+  const fallback = { name: "", nameLog: [], attempts: 0, completed: 0, byTest: {}, history: [], practiceTime: createEmptyPracticeTime() };
   try {
     return normalizeProgress(JSON.parse(localStorage.getItem("matekMuhelyTestProgress") || "{}"));
   } catch {
@@ -1935,7 +1938,6 @@ function loadProgress() {
 }
 
 function normalizeProgress(data) {
-  const fallback = { name: "", nameLog: [], attempts: 0, completed: 0, byTest: {}, history: [] };
   const source = data && typeof data === "object" ? data : {};
   const byTest = {};
   Object.entries(source.byTest || {}).forEach(([testId, row]) => {
@@ -1954,8 +1956,120 @@ function normalizeProgress(data) {
     attempts: Number(source.attempts) || 0,
     completed: Number(source.completed) || 0,
     byTest,
-    history: Array.isArray(source.history) ? source.history.slice(-300) : []
+    history: Array.isArray(source.history) ? source.history.slice(-300) : [],
+    practiceTime: normalizePracticeTime(source.practiceTime)
   };
+}
+
+function createEmptyPracticeTime() {
+  return {
+    days: {},
+    lastActivityAt: "",
+    longestDay: { date: "", seconds: 0 },
+    warnedDays: []
+  };
+}
+
+function normalizePracticeTime(data) {
+  const source = data && typeof data === "object" ? data : {};
+  const days = {};
+  Object.entries(source.days || {}).forEach(([date, seconds]) => {
+    const cleanDate = String(date || "");
+    const cleanSeconds = Math.max(0, Math.round(Number(seconds) || 0));
+    if (/^\d{4}-\d{2}-\d{2}$/.test(cleanDate) && cleanSeconds > 0) {
+      days[cleanDate] = cleanSeconds;
+    }
+  });
+
+  let longestDay = source.longestDay && typeof source.longestDay === "object"
+    ? {
+        date: String(source.longestDay.date || ""),
+        seconds: Math.max(0, Math.round(Number(source.longestDay.seconds) || 0))
+      }
+    : { date: "", seconds: 0 };
+
+  Object.entries(days).forEach(([date, seconds]) => {
+    if (seconds > longestDay.seconds) {
+      longestDay = { date, seconds };
+    }
+  });
+
+  return {
+    days,
+    lastActivityAt: typeof source.lastActivityAt === "string" ? source.lastActivityAt : "",
+    longestDay,
+    warnedDays: Array.isArray(source.warnedDays) ? source.warnedDays.map(String).slice(-60) : []
+  };
+}
+
+function todayKey(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function formatDuration(seconds) {
+  const totalMinutes = Math.max(0, Math.round(seconds / 60));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (hours && minutes) return `${hours} óra ${minutes} perc`;
+  if (hours) return `${hours} óra`;
+  return `${minutes} perc`;
+}
+
+function recordPracticeActivity({ showWarning = false } = {}) {
+  const now = new Date();
+  const practiceTime = normalizePracticeTime(state.progress.practiceTime);
+  const today = todayKey(now);
+  const last = practiceTime.lastActivityAt ? new Date(practiceTime.lastActivityAt) : null;
+  const sameDay = last && todayKey(last) === today;
+  const gapSeconds = last ? Math.max(0, Math.round((now - last) / 1000)) : 0;
+
+  if (sameDay && gapSeconds > 0 && gapSeconds <= MAX_ACTIVITY_GAP_SECONDS) {
+    practiceTime.days[today] = (practiceTime.days[today] || 0) + gapSeconds;
+  } else {
+    practiceTime.days[today] = practiceTime.days[today] || 0;
+  }
+
+  practiceTime.lastActivityAt = now.toISOString();
+  if ((practiceTime.days[today] || 0) > (practiceTime.longestDay.seconds || 0)) {
+    practiceTime.longestDay = { date: today, seconds: practiceTime.days[today] };
+  }
+
+  state.progress.practiceTime = practiceTime;
+
+  const crossedLimit = practiceTime.days[today] > DAILY_PRACTICE_LIMIT_SECONDS;
+  const alreadyWarned = practiceTime.warnedDays.includes(today);
+  if (showWarning && crossedLimit && !alreadyWarned) {
+    practiceTime.warnedDays = [...practiceTime.warnedDays, today].slice(-60);
+    state.progress.practiceTime = practiceTime;
+    setFeedback("Ma már több mint 1 órát gyakoroltál aktívan. Szép munka, de most tarts egy kis szünetet!", "good");
+    return true;
+  }
+
+  return false;
+}
+
+function practiceTimeAuditHtml() {
+  const practiceTime = normalizePracticeTime(state.progress.practiceTime);
+  const todaySeconds = practiceTime.days[todayKey()] || 0;
+  const longestSeconds = practiceTime.longestDay.seconds || 0;
+  const overLimit = Math.max(0, longestSeconds - DAILY_PRACTICE_LIMIT_SECONDS);
+
+  if (!longestSeconds) {
+    return `
+      <br><br><strong>Aktív gyakorlási idő</strong><br>
+      Még nincs mérhető aktív gyakorlási idő ebben a mentésben.
+    `;
+  }
+
+  return `
+    <br><br><strong>Aktív gyakorlási idő</strong><br>
+    Mai aktív gyakorlás: ${formatDuration(todaySeconds)}<br>
+    Leghosszabb munka: ${practiceTime.longestDay.date}, ${formatDuration(longestSeconds)}<br>
+    Az 1 órás határ túllépése: ${overLimit ? formatDuration(overLimit) : "nem lépte át"}
+  `;
 }
 
 function normalizeNameLog(source) {
@@ -2083,6 +2197,7 @@ function createRun() {
 }
 
 function startRun(resetMessage = true) {
+  const warned = resetMessage ? recordPracticeActivity({ showWarning: true }) : false;
   state.run = createRun();
   state.index = 0;
   state.active = true;
@@ -2093,7 +2208,7 @@ function startRun(resetMessage = true) {
   state.progress.byTest[state.selectedTest] = row;
   saveProgress();
   renderAll();
-  if (resetMessage) {
+  if (resetMessage && !warned) {
     setFeedback(`Kezdhetjük. A cél: ${selectedTest().length} hibátlan válasz egymás után.`, "");
   }
 }
@@ -2295,13 +2410,14 @@ function showNameAudit() {
   saveProgress();
   els.awardDetails.dataset.locked = "true";
   if (!names.length) {
-    els.awardDetails.textContent = "Tanári ellenőrzés: ebben a mentésben még nincs beírt név.";
+    els.awardDetails.innerHTML = `Tanári ellenőrzés: ebben a mentésben még nincs beírt név.${practiceTimeAuditHtml()}`;
     return;
   }
   els.awardDetails.innerHTML = `
     <strong>Tanári ellenőrzés</strong><br>
     Ebben a mentésben eddig ezek a nevek szerepeltek:<br>
     ${names.map((item) => `<span class="audit-name">${escapeHtml(item.name)}</span>`).join(", ")}
+    ${practiceTimeAuditHtml()}
   `;
 }
 
@@ -2313,6 +2429,7 @@ function disableAnswering(disabled) {
 
 function checkAnswer() {
   if (!state.active) return;
+  const warned = recordPracticeActivity({ showWarning: true });
   const question = state.run[state.index];
   let value = "";
   let ok = false;
@@ -2333,6 +2450,9 @@ function checkAnswer() {
   state.index += 1;
   if (state.index >= selectedTest().length) {
     completeRun(question, value);
+    if (warned) {
+      setFeedback("Ma már több mint 1 órát gyakoroltál aktívan. Szép munka, de most tarts egy kis szünetet!", "good");
+    }
     return;
   }
 
@@ -2344,7 +2464,9 @@ function checkAnswer() {
   state.progress.byTest[state.selectedTest] = row;
   saveProgress();
   renderAll();
-  setFeedback("Helyes. Jöhet a következő.", "good");
+  if (!warned) {
+    setFeedback("Helyes. Jöhet a következő.", "good");
+  }
 }
 
 function exportProgress() {
@@ -2398,6 +2520,8 @@ els.testButtons.addEventListener("click", (event) => {
 els.answerArea.addEventListener("click", (event) => {
   const button = event.target.closest("button[data-choice]");
   if (!button) return;
+  recordPracticeActivity();
+  saveProgress();
   state.selectedChoice = button.dataset.choice;
   document.querySelectorAll(".choice-btn").forEach((item) => item.classList.remove("selected"));
   button.classList.add("selected");
@@ -2425,7 +2549,11 @@ els.restartBtn.addEventListener("click", () => startRun(true));
 els.checkBtn.addEventListener("click", checkAnswer);
 els.hintBtn.addEventListener("click", () => {
   if (!state.active) return;
-  setFeedback(state.run[state.index].hint, "");
+  const warned = recordPracticeActivity({ showWarning: true });
+  saveProgress();
+  if (!warned) {
+    setFeedback(state.run[state.index].hint, "");
+  }
 });
 els.exportBtn.addEventListener("click", exportProgress);
 els.importBtn.addEventListener("click", () => els.importInput.click());
